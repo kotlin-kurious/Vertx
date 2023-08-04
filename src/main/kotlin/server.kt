@@ -9,30 +9,37 @@ import kotlinx.coroutines.launch
 
 fun main() {
     val vertx = Vertx.vertx()
-    vertx.createHttpServer().requestHandler{ ctx ->
-        ctx.response().end("OK")
-    }.listen(8081)
-    println("open http://localhost:8081")
+    vertx.deployVerticle(ServerVerticle())
+
 }
 
-private fun router(): Router {
-    val vertx = Vertx.vertx()
-    val router = Router.router(vertx)
+class ServerVerticle : CoroutineVerticle() {
+    override suspend fun start() {
+        val router = router()
 
-    val json = json {
-        obj(
-            "status" to "OK"
-        )
+        vertx.createHttpServer()
+            .requestHandler(router)
+            .listen(8081)
+        println("open http://localhost:8081/status")
     }
 
-    router.get("/status").handler { ctx ->
-        ctx.response()
-            .setStatusCode(200)
-            .end(json.toString())
-    }
-    vertx.createHttpServer()
-        .requestHandler(router)
-        .listen(8081)
+    private fun router(): Router {
 
-    return router
+        val router = Router.router(vertx)
+        router.route().handler(BodyHandler.create())
+        router.get("/status").handler { ctx ->
+            val json = json {
+                obj(
+                    "status" to "OK"
+                )
+            }
+
+            ctx.response()
+                .setStatusCode(200)
+                .end(json.toString())
+        }
+
+
+        return router
+    }
 }
