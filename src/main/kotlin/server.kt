@@ -39,7 +39,30 @@ class ServerVerticle : CoroutineVerticle() {
                 .end(json.toString())
         }
 
+        router.mountSubRouter("/dogs", dogsRouter())
+        return router
+    }
 
+    private fun dogsRouter(): Router {
+        val router = Router.router(vertx)
+        router.delete("/:id").handler { ctx ->
+            val id = ctx.request().getParam("id").toInt()
+            vertx.eventBus().request<Int>("dogs:delete", id) {
+                ctx.end()
+            }
+        }
+        router.put("/:id").handler { ctx ->
+            launch {
+                val id = ctx.request().getParam("id").toInt()
+                val body: JsonObject = ctx.bodyAsJson.mergeIn(json {
+                    obj("id" to id)
+                })
+
+                vertx.eventBus().request<Int>("dogs:update", body) { res ->
+                    ctx.end(res.result().body().toString())
+                }
+            }
+        }
         return router
     }
 }
