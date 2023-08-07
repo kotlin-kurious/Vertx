@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 fun main() {
     val vertx = Vertx.vertx()
     vertx.deployVerticle(ServerVerticle())
+    vertx.deployVerticle(DogsVerticle())
 
 }
 
